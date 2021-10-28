@@ -6,4 +6,4 @@ phases:
       - npm install
   build:
     commands:
-      - babel src -d build
+      - npm run-script build
