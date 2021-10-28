@@ -423,27 +423,6 @@ app.post("/upload", (req, res) => {
   });
 });
 
-app.get("/check-url", async (req, res) => {
-  const url = req.query.url;
-  fetch(url, {
-    method: "GET",
-    headers: {
-      "Content-Type": "text/plain",
-      "X-My-Custom-Header": "value-v",
-    },
-  })
-    .then((result) => {
-      if (!result.size) {
-        res.json({ message: result });
-      } else {
-        res.json({ message: "success" });
-      }
-    })
-    .catch(() => {
-      res.json({ message: "blocked" });
-    });
-});
-
 app.listen(port, () => {
   console.log(`app listening at http://localhost:${port}`);
 });
