@@ -12,7 +12,9 @@ module.exports = async (db, table, data, formatter) => {
           reject(err);
         } else {
           const findedIds = res.Responses[table].map((e) => e.id.S);
-          const notFoundData = data.filter((e) => !findedIds.includes(e.id));
+          const notFoundData = companiesGroup.filter(
+            (e) => !findedIds.includes(e.id)
+          );
           resolve(notFoundData);
         }
       });

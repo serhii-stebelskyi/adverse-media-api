@@ -371,13 +371,13 @@ app.post("/upload", (req, res) => {
             readedData,
             formatCompaniesToGetRequest
           );
-          await writeCompaniesToDB(
+          const addedCompanies = await writeCompaniesToDB(
             dynamodb,
             "companies-lookup",
             newCompanies,
             formatCompanyLookup
           );
-          return res.json(newCompanies);
+          return res.json(addedCompanies);
         }
       } else if (file?.mimetype === csvType) {
         const data = await csvtojson().fromString(req.file.buffer.toString());
@@ -408,13 +408,13 @@ app.post("/upload", (req, res) => {
             formattedData,
             formatCompaniesToGetRequest
           );
-          await writeCompaniesToDB(
+          const addedCompanies = await writeCompaniesToDB(
             dynamodb,
             "companies-lookup",
             newCompanies,
             formatCompanyLookup
           );
-          return res.json(newCompanies);
+          return res.json(addedCompanies);
         }
       } else {
         return res.status(402).json({ message: "Incorrect file type" });
