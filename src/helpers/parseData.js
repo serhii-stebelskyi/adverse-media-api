@@ -43,3 +43,57 @@ module.exports.parseCompanies = (data) => {
   });
   return result;
 };
+
+module.exports.parseData = (data) => {
+  const fileData =
+    typeof data === "string" ? XLSX.readFile(data) : XLSX.read(data);
+  const sheets = fileData["Workbook"]["Sheets"].map(({ name }) => name);
+  const tableLabels = {
+    AMPLYFI_NBR: "id",
+    Company: "title",
+    "Country Name": "country",
+    "NACE Code": "nace_code",
+    "Activity group name": "activity_group_name",
+    Street: "street",
+    City: "city",
+    Postcode: "postcode",
+    "Lang Address": "lang_address",
+    HOLDING_COMPANY: "holding_company",
+    HOLDPOSTAL_CODE: "holdpostal_code",
+    HOLDCOUNTRY_CODE: "holdcountry_code",
+    HOLDADDR_CITY: "holdaddr_city",
+    HOLDLINE_ADDR_1: "holdline_addr_1",
+    "company_main.siren/ FRA ID": "company_main_siren_fra_id",
+    "Media URLs": "media",
+  };
+  const result = [];
+  sheets.forEach((sheet) => {
+    const labelKeySymbols = {};
+    const sheetDataKeys = Object.keys(fileData["Sheets"][sheet]).filter(
+      (key) => key !== "!ref" && key !== "!margins"
+    );
+    let element = {};
+    sheetDataKeys.forEach((key) => {
+      const symbol = key[0];
+      const keyNum = Number(key.slice(1));
+      const el = fileData["Sheets"][sheet][key];
+      const property = labelKeySymbols[symbol];
+      const propertyValue = el["v"];
+      const labelKeySymbolsProperties = Object.keys(labelKeySymbols);
+      const firstLabelKeySymbol = labelKeySymbolsProperties[0];
+      if (keyNum === 1) {
+        labelKeySymbols[symbol] = tableLabels[propertyValue];
+      } else {
+        console.log(element, symbol);
+        if (symbol === firstLabelKeySymbol) {
+          element = {
+            [symbol]: { [property]: propertyValue },
+          };
+        } else if (element[symbol]) {
+          element[symbol][property] = propertyValue;
+        }
+      }
+    });
+  });
+  return result;
+};

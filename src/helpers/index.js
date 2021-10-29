@@ -1,5 +1,5 @@
 const writeCompaniesToDB = require("./writeCompaniesToDB");
-const { parseCompanies } = require("./parseData");
+const { parseCompanies, parseData } = require("./parseData");
 const {
   formatCompanyLookup,
   formatPutRequestToCompany,
@@ -11,6 +11,7 @@ const { scanElements } = require("./scanElements");
 
 module.exports.writeCompaniesToDB = writeCompaniesToDB;
 module.exports.parseCompanies = parseCompanies;
+module.exports.parseData = parseData;
 module.exports.formatCompanyLookup = formatCompanyLookup;
 module.exports.formatPutRequestToCompany = formatPutRequestToCompany;
 module.exports.formatCompaniesToGetRequest = formatCompaniesToGetRequest;

@@ -6,12 +6,13 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const mime = require("mime-types");
+const xlsx = require("xlsx");
 const axios = require("./axios");
 const csvtojson = require("csvtojson/v2");
-const fetch = require("cross-fetch");
 require("dotenv").config();
 const {
   parseCompanies,
+  parseData,
   writeCompaniesToDB,
   formatCompanyLookup,
   formatPutRequestToCompany,
@@ -421,6 +422,13 @@ app.post("/upload", (req, res) => {
       }
     }
   });
+});
+
+app.get("/", (req, res) => {
+  const parsedData = parseData(
+    `${__dirname}/../files/success-file-example-with-links.xlsx`
+  );
+  res.json(parsedData);
 });
 
 app.listen(port, () => {
