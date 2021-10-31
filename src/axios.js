@@ -1,12 +1,12 @@
-const axios = require("axios").default;
-require("dotenv").config();
+const axios = require('axios').default
+require('dotenv').config()
 
-const accessToken = process.env.COMPLY_API_KEY;
+const accessToken = process.env.COMPLY_API_KEY
 const instance = axios.create({
-  baseURL: "https://api.complyadvantage.com",
+  baseURL: 'https://api.complyadvantage.com',
   headers: {
-    Authorization: `Token ${accessToken}`,
-  },
-});
+    Authorization: `Token ${accessToken}`
+  }
+})
 
-module.exports = instance;
+module.exports = instance
