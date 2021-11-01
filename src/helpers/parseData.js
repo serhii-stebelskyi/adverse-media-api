@@ -60,5 +60,5 @@ module.exports.parseCompanies = (data) => {
       }
     });
   });
-  return result;
+  return result.map((e) => ({ ...e, lower_title: e.title.toLowerCase() }));
 };
