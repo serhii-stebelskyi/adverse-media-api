@@ -362,48 +362,10 @@ app.post("/upload", (req, res) => {
       const xlsxType = mime.lookup("xlsx");
       const csvType = mime.lookup("csv");
       const file = req.file;
+      let readedData = null;
       if (file?.mimetype === xlsxType) {
         const data = await file.buffer;
-        const readedData = parseCompanies(data);
-        if (!readedData || !readedData.length) {
-          return res.status(204).send();
-        } else {
-          const newCompanies = await readCompaniesFromDB(
-            dynamodb,
-            "companies-lookup",
-            readedData,
-            formatCompaniesToGetRequest
-          );
-          const addedCompanies = await writeCompaniesToDB(
-            dynamodb,
-            "companies-lookup",
-            newCompanies,
-            formatCompanyLookup
-          );
-          const companiesWithMedia = await Promise.all(
-            readedData
-              .filter((e) => e.media && e.media.length > 0)
-              .map(async ({ id, title, media }) => {
-                const titles = await urlToTitle(media);
-                return {
-                  id,
-                  title,
-                  media: media.map((url, index) => ({
-                    url,
-                    title: titles[index] || urlParse(url).pathname,
-                  })),
-                  original_id: id,
-                };
-              })
-          );
-          await writeCompaniesToDB(
-            dynamodb,
-            "companies",
-            companiesWithMedia,
-            formatCompany
-          );
-          return res.json(addedCompanies);
-        }
+        readedData = parseCompanies(data);
       } else if (file?.mimetype === csvType) {
         const data = await csvtojson().fromString(req.file.buffer.toString());
 
@@ -448,44 +410,73 @@ app.post("/upload", (req, res) => {
         if (!result || !result.length) {
           return res.status(204).send();
         } else {
-          const newCompanies = await readCompaniesFromDB(
-            dynamodb,
-            "companies-lookup",
-            result,
-            formatCompaniesToGetRequest
-          );
-          const addedCompanies = await writeCompaniesToDB(
-            dynamodb,
-            "companies-lookup",
-            newCompanies,
-            formatCompanyLookup
-          );
-          const companiesWithMedia = await Promise.all(
-            result
-              .filter((e) => e.media && e.media.length > 0)
-              .map(async ({ id, title, media }) => {
-                const titles = await urlToTitle(media);
-                return {
-                  id,
-                  title,
-                  media: media.map((url, index) => ({
-                    url,
-                    title: titles[index] || urlParse(url).pathname,
-                  })),
-                  original_id: id,
-                };
-              })
-          );
-          await writeCompaniesToDB(
-            dynamodb,
-            "companies",
-            companiesWithMedia,
-            formatCompany
-          );
-          return res.json(addedCompanies);
+          readedData = result;
         }
       } else {
         return res.status(402).json({ message: "Incorrect file type" });
+      }
+      if (!readedData || !readedData.length) {
+        return res.status(204).send();
+      } else {
+        const newCompanies = (
+          await readCompaniesFromDB(
+            dynamodb,
+            "companies-lookup",
+            readedData,
+            formatCompaniesToGetRequest
+          )
+        ).notFoundData;
+        const addedCompanies = await writeCompaniesToDB(
+          dynamodb,
+          "companies-lookup",
+          newCompanies,
+          formatCompanyLookup
+        );
+        const companiesWithMedia = await Promise.all(
+          readedData
+            .filter((e) => e.media && e.media.length > 0)
+            .map(async ({ id, title, media }) => {
+              const titles = await urlToTitle(media);
+              return {
+                id,
+                title,
+                media: media.map((url, index) => ({
+                  url,
+                  title: titles[index] || urlParse(url).pathname,
+                })),
+                original_id: id,
+              };
+            })
+        );
+        const readedCompaniesWithMedia = (
+          await readCompaniesFromDB(
+            dynamodb,
+            "companies",
+            companiesWithMedia,
+            formatCompaniesToGetRequest,
+            formatPutRequestToCompany
+          )
+        ).findedData;
+        const companiesWithJoinedMedia = companiesWithMedia.map((el) => {
+          const readedElement = readedCompaniesWithMedia.find(
+            (e) => e.id === el.id
+          );
+          const readedMedia = readedElement?.media || [];
+          const newMedia = el.media.filter(
+            (mediaEl) => !readedMedia.find((e) => e.url === mediaEl.url)
+          );
+          return {
+            ...el,
+            media: [...readedMedia, ...newMedia],
+          };
+        });
+        writeCompaniesToDB(
+          dynamodb,
+          "companies",
+          companiesWithJoinedMedia,
+          formatCompany
+        );
+        return res.json({ count: addedCompanies.length });
       }
     }
   });

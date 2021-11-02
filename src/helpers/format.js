@@ -109,7 +109,7 @@ module.exports.formatCompaniesToGetRequest = (table, companies) => {
     RequestItems: {
       [table]: {
         Keys: keys,
-        ProjectionExpression: "id, media",
+        ProjectionExpression: "id, media, title, original_id",
       },
     },
   };
