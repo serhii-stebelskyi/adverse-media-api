@@ -327,7 +327,7 @@ app.post(
           .json({ message: "We expected technical details..." });
       } else {
         if (!Object.keys(data).length) {
-          return res.status(404).json({ message: "User not found" });
+          return res.status(403).json({ message: "Wrong email or password" });
         } else {
           const hash = data.Item.password.S;
           bcrypt.compare(password, hash, (err, result) => {
@@ -352,7 +352,9 @@ app.post(
                   }
                 );
               } else {
-                return res.status(403).json({ message: "Wrong password" });
+                return res
+                  .status(403)
+                  .json({ message: "Wrong email or password" });
               }
             }
           });
