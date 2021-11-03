@@ -4,37 +4,37 @@ module.exports.scanElements = async (
   defaultParams,
   lastEvaluatedKey
 ) => {
-  let result = []
+  let result = [];
   const params = {
     TableName: table,
-    ...defaultParams
-  }
+    ...defaultParams,
+  };
   if (lastEvaluatedKey) {
-    params['ExclusiveStartKey'] = lastEvaluatedKey
+    params["ExclusiveStartKey"] = lastEvaluatedKey;
   }
   const promise = new Promise((resolve, reject) => {
     db.scan(params, async (err, data) => {
       if (err) {
-        console.log(err)
-        reject(err)
+        console.log(err);
+        reject(err);
       } else {
-        const lastEvaluatedKey = data.LastEvaluatedKey
-        result = [...result, ...data.Items]
+        const lastEvaluatedKey = data.LastEvaluatedKey;
+        result = [...result, ...data.Items];
         if (lastEvaluatedKey) {
           const data = await this.scanElements(
             db,
             table,
             defaultParams,
             lastEvaluatedKey
-          )
-          result = [...result, ...data]
-          resolve()
+          );
+          result = [...result, ...data];
+          resolve();
         } else {
-          resolve()
+          resolve();
         }
       }
-    })
-  })
-  await promise
-  return result
-}
+    });
+  });
+  await promise;
+  return result;
+};

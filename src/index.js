@@ -6,8 +6,6 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const mime = require("mime-types");
-const xlsx = require("xlsx");
-const axios = require("./axios");
 const csvtojson = require("csvtojson/v2");
 const urlToTitle = require("url-to-title");
 const urlParse = require("url-parse");
@@ -21,6 +19,7 @@ const {
   formatCompaniesToGetRequest,
   formatPutRequestToCompanyMedia,
   readCompaniesFromDB,
+  formatRequestToCompanyLookup,
   scanElements,
 } = require("./helpers");
 
@@ -41,6 +40,7 @@ AWS.config.update({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
 });
 const dynamodb = new AWS.DynamoDB();
+const docClient = new AWS.DynamoDB.DocumentClient();
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
@@ -91,53 +91,41 @@ app.get("/companies", (req, res) => {
   });
 });
 
-const getSearchDetails = async (data, index = 0) => {
-  let result = [];
-  if (data[index]) {
-    await axios.get(`/searches/${data[index].id}/details`).then(async (res) => {
-      const companies = res.data?.content.data.hits
-        .slice(0, 1)
-        .map((company) => {
-          const formattedCompany = {
-            id: company.doc.id,
-            title: company.doc ? company.doc.name || "" : "",
-            media:
-              Boolean(company.doc) && Boolean(company.doc.media)
-                ? company.doc.media.map((media) => ({
-                    title: media.title,
-                    url: media.url,
-                  }))
-                : [],
-          };
-          return formattedCompany;
-        });
-      if (companies && companies.length > 0) {
-        result = [...result, ...companies];
-      }
-
-      const newCompanies = await getSearchDetails(data, index + 1);
-      if (newCompanies && newCompanies.length > 0) {
-        result = [...result, ...newCompanies];
-      }
-    });
-  }
-  return result;
-};
-
 app.get("/most-searches", (req, res) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.split(" ")?.[1];
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
     if (err) {
       res.status(401).json({ message: "Not authorized" });
     } else {
-      axios.get("/searches?entity_type=company").then(async (response) => {
-        const topSearches = response.data.content.data
-          .sort((a, b) => (b.total_hits < a.total_hits ? -1 : 1))
-          .slice(0, 10);
-        const companies = await getSearchDetails(topSearches);
-        res.json(companies);
+      const data = await scanElements(dynamodb, "companies-lookup", {
+        //IndexName: "id-search_count-index",
+        //Select: "ALL_ATTRIBUTES",
+        //Limit: 10,
+        ProjectionExpression: "id, title, search_count",
       });
+      const formattedData = data
+        .map(formatRequestToCompanyLookup)
+        .sort((a, b) => (b.search_count > a.search_count ? 1 : -1))
+        .slice(0, 10);
+      const promises = formattedData.map(async (company) => {
+        return scanElements(dynamodb, "companies", {
+          FilterExpression: "original_id = :original_id",
+          ExpressionAttributeValues: {
+            ":original_id": { S: String(company.id) },
+          },
+          ProjectionExpression: "media",
+        })
+          .then((data) => {
+            const media = data?.map(formatPutRequestToCompanyMedia).flat();
+            return { ...company, media };
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      });
+      const result = (await Promise.all(promises)).flat();
+      res.json(result);
     }
   });
 });
@@ -160,7 +148,7 @@ app.get("/search", async (req, res) => {
           ExpressionAttributeValues: {
             ":lower_title": { S: query },
           },
-          ProjectionExpression: "lower_title, id, title",
+          ProjectionExpression: "lower_title, id, title, search_count",
         };
         new Promise((resolve, reject) => {
           dynamodb.scan(params, async function (err, data) {
@@ -171,7 +159,38 @@ app.get("/search", async (req, res) => {
               const originCompanies = items.map((item) => ({
                 id: item.id.S,
                 title: item.title.S,
+                search_count: item.search_count?.N || 0,
               }));
+              const companiesWithCounter = originCompanies.map((e) => ({
+                ...e,
+                search_count: (e.search_count ? +e.search_count : 0) + 1,
+              }));
+              companiesWithCounter.forEach((company) => {
+                const params = {
+                  TableName: "companies-lookup",
+                  Key: {
+                    id: company.id,
+                  },
+                  UpdateExpression: "set search_count = :s",
+                  ExpressionAttributeValues: {
+                    ":s": company.search_count,
+                  },
+                  ReturnValues: "UPDATED_NEW",
+                };
+                docClient.update(params, function (err, data) {
+                  if (err) {
+                    console.error(
+                      "Unable to update item. Error JSON:",
+                      JSON.stringify(err, null, 2)
+                    );
+                  } else {
+                    console.log(
+                      "UpdateItem succeeded:",
+                      JSON.stringify(data, null, 2)
+                    );
+                  }
+                });
+              });
               if (originCompanies.length < 10) {
                 const promises = originCompanies.map(async (originCompany) => {
                   return scanElements(dynamodb, "companies", {
@@ -480,13 +499,6 @@ app.post("/upload", (req, res) => {
       }
     }
   });
-});
-
-app.get("/", (req, res) => {
-  const parsedData = parseData(
-    `${__dirname}/../files/success-file-example-with-links.xlsx`
-  );
-  res.json(parsedData);
 });
 
 app.listen(port, () => {

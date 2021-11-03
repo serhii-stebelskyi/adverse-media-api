@@ -2,6 +2,9 @@ module.exports = async (db, table, data, formatter, resFormatter) => {
   const count = 100;
   const requestsCount = Math.ceil(data.length / count);
   const arr = new Array(requestsCount).fill(null).map((_, index) => index);
+  if (!arr.length) {
+    return { notFoundData: [], findedData: [] };
+  }
   for (const i of arr) {
     const companiesGroup = data.slice(count * i, count * (i + 1));
     const params = formatter(table, companiesGroup);

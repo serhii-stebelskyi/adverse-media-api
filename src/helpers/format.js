@@ -64,6 +64,7 @@ module.exports.formatCompanyLookup = (company) => {
     holdaddr_city: "S",
     holdline_addr_1: "S",
     company_main_siren_fra_id: "S",
+    search_count: "N",
   };
   return format(schema, company);
 };
@@ -112,5 +113,13 @@ module.exports.formatCompaniesToGetRequest = (table, companies) => {
         ProjectionExpression: "id, media, title, original_id",
       },
     },
+  };
+};
+
+module.exports.formatRequestToCompanyLookup = (request) => {
+  return {
+    id: request.id?.S || "",
+    title: request.title?.S || "",
+    search_count: +request.search_count?.N || 0,
   };
 };

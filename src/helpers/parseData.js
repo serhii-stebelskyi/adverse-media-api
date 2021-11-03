@@ -44,7 +44,9 @@ module.exports.parseCompanies = (data) => {
           symbol === labelKeySymbolsProperties[0] &&
           keyIdx !== labelKeySymbolsProperties.length
         ) {
-          result.push(element);
+          if (!result.find((e) => e.id === element.id)) {
+            result.push(element);
+          }
           element = {};
         }
         if (labelKeySymbols[symbol] === tableLabels["Media URLs"]) {
@@ -54,11 +56,18 @@ module.exports.parseCompanies = (data) => {
         } else {
           element[property] = propertyValue;
         }
-        if (keyIdx === sheetDataKeys.length - 1) {
+        if (
+          keyIdx === sheetDataKeys.length - 1 &&
+          !result.find((e) => e.id === element.id)
+        ) {
           result.push(element);
         }
       }
     });
   });
-  return result.map((e) => ({ ...e, lower_title: e.title.toLowerCase() }));
+  return result.map((e) => ({
+    ...e,
+    lower_title: e.title.toLowerCase(),
+    search_count: 0,
+  }));
 };

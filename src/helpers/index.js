@@ -6,6 +6,7 @@ const {
   formatPutRequestToCompany,
   formatCompaniesToGetRequest,
   formatPutRequestToCompanyMedia,
+  formatRequestToCompanyLookup,
 } = require("./format");
 const readCompaniesFromDB = require("./readCompaniesFromDB");
 const { scanElements } = require("./scanElements");
@@ -19,3 +20,4 @@ module.exports.formatCompaniesToGetRequest = formatCompaniesToGetRequest;
 module.exports.formatPutRequestToCompanyMedia = formatPutRequestToCompanyMedia;
 module.exports.readCompaniesFromDB = readCompaniesFromDB;
 module.exports.scanElements = scanElements;
+module.exports.formatRequestToCompanyLookup = formatRequestToCompanyLookup;
