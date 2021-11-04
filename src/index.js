@@ -340,7 +340,7 @@ app.post(
                 jwt.sign(
                   { email, password },
                   process.env.JWT_SECRET,
-                  {},
+                  { expiresIn: "12h" },
                   (err, token) => {
                     if (err) {
                       return res
