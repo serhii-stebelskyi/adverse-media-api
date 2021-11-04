@@ -79,7 +79,9 @@ app.get("/companies", (req, res) => {
     } else {
       await scanElements(dynamodb, "companies")
         .then((data) => {
-          const formattedResult = data.map((e) => formatPutRequestToCompany(e));
+          const formattedResult = data
+            .map(formatPutRequestToCompany)
+            .map(({ id, ...data }) => ({ ...data }));
           res.json(formattedResult);
         })
         .catch(() => {
