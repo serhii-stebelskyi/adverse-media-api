@@ -123,9 +123,6 @@ app.get("/most-searches", (req, res) => {
         })
           .then((data) => {
             const media = data?.map(formatPutRequestToCompanyMedia).flat();
-            if (company.id === "00014727076951") {
-              console.log(media);
-            }
             return { ...company, media: media.filter((e) => !e?.banned) };
           })
           .catch((err) => {
