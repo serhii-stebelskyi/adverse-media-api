@@ -54,6 +54,9 @@ module.exports.searchCompaniesData = async (event, context, callback) => {
                     url: {
                       S: media.url,
                     },
+                    banned: {
+                      BOOL: media.banned || false,
+                    },
                   },
                 }))
               : [],
@@ -88,6 +91,7 @@ module.exports.searchCompaniesData = async (event, context, callback) => {
           return {
             title: item.M.title.S,
             url: item.M.url.S,
+            banned: item.M.banned ? item.M.banned.BOOL : false,
           };
         })
       : [];
@@ -209,6 +213,7 @@ module.exports.searchCompaniesData = async (event, context, callback) => {
                             ? company.doc.media.map((media) => ({
                                 title: media.title,
                                 url: media.url,
+                                banned: false,
                               }))
                             : [],
                         original_id: id,

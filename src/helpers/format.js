@@ -18,6 +18,9 @@ module.exports.formatCompany = (company) => {
                   url: {
                     S: media.url,
                   },
+                  banned: {
+                    BOOL: media.banned || false,
+                  },
                 },
               }))
             : [],
@@ -75,6 +78,7 @@ module.exports.formatPutRequestToCompanyMedia = (request) => {
         return {
           title: item.M.title.S,
           url: item.M.url.S,
+          banned: item.M?.banned?.BOOL || false,
         };
       })
     : [];
@@ -87,6 +91,7 @@ module.exports.formatPutRequestToCompany = (request) => {
         return {
           title: item.M.title.S,
           url: item.M.url.S,
+          banned: item.M?.banned?.BOOL || false,
         };
       })
     : [];

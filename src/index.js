@@ -81,7 +81,10 @@ app.get("/companies", (req, res) => {
         .then((data) => {
           const formattedResult = data
             .map(formatPutRequestToCompany)
-            .map(({ id, ...data }) => ({ ...data }));
+            .map(({ id, media, ...data }) => ({
+              ...data,
+              media: media.filter((e) => !e?.banned),
+            }));
           res.json(formattedResult);
         })
         .catch(() => {
@@ -120,7 +123,10 @@ app.get("/most-searches", (req, res) => {
         })
           .then((data) => {
             const media = data?.map(formatPutRequestToCompanyMedia).flat();
-            return { ...company, media };
+            if (company.id === "00014727076951") {
+              console.log(media);
+            }
+            return { ...company, media: media.filter((e) => !e?.banned) };
           })
           .catch((err) => {
             console.log(err);
@@ -206,7 +212,10 @@ app.get("/search", async (req, res) => {
                       const media = data
                         ?.map(formatPutRequestToCompanyMedia)
                         .flat();
-                      return { ...originCompany, media };
+                      return {
+                        ...originCompany,
+                        media: media.filter((e) => !e?.banned),
+                      };
                     })
                     .catch((err) => {
                       console.log(err);
@@ -225,7 +234,7 @@ app.get("/search", async (req, res) => {
                     return {
                       id: originCompany.id,
                       title: originCompany.title,
-                      media,
+                      media: media.filter((e) => !e?.banned),
                     };
                   });
                   resolve(result);
@@ -466,6 +475,7 @@ app.post("/upload", (req, res) => {
                 media: media.map((url, index) => ({
                   url,
                   title: titles[index] || urlParse(url).pathname,
+                  banned: false,
                 })),
                 original_id: id,
               };
